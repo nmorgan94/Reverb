@@ -44,35 +44,67 @@ AudioPluginAudioProcessorEditor::~AudioPluginAudioProcessorEditor()
 //==============================================================================
 void AudioPluginAudioProcessorEditor::paint (juce::Graphics& g)
 {
-    // Fill background
-    g.fillAll (juce::Colours::darkgrey);
-
-    g.setColour (juce::Colours::white);
-    g.setFont (juce::FontOptions(20.0f).withStyle("Bold"));
-    g.drawText ("Reverb Plugin", getLocalBounds().removeFromTop(40), juce::Justification::centred);
+    auto bounds = getLocalBounds().toFloat();
+    juce::ColourGradient gradient(
+        juce::Colour(0xff1a1a2e), bounds.getX(), bounds.getY(),
+        juce::Colour(0xff16213e), bounds.getX(), bounds.getBottom(),
+        false);
+    g.setGradientFill(gradient);
+    g.fillAll();
     
-    // Draw labels below each slider
-    g.setFont (juce::FontOptions(14.0f));
-    auto bounds = getLocalBounds();
-    bounds.removeFromTop(60);
+    // Draw title with shadow effect
+    auto titleArea = getLocalBounds().removeFromTop(60);
+    
+    // Shadow
+    g.setColour(juce::Colours::black.withAlpha(0.3f));
+    g.setFont(juce::FontOptions(28.0f).withStyle("Bold"));
+    g.drawText("REVERB", titleArea.translated(2, 2), juce::Justification::centred);
+    
+    // Main title
+    g.setColour(juce::Colour(0xfff0f0f0));
+    g.drawText("REVERB", titleArea, juce::Justification::centred);
+    
+    
+    // Draw labels
+    g.setFont(juce::FontOptions(13.0f).withStyle("Bold"));
     
     int sliderSize = 100;
     int spacing = 20;
     int totalWidth = (sliderSize * 4) + (spacing * 3);
-    int startX = (bounds.getWidth() - totalWidth) / 2;
-    int labelY = bounds.getHeight() - 40;
+    int startX = (getWidth() - totalWidth) / 2;
     
-    g.drawText ("Room Size", startX, labelY, sliderSize, 20, juce::Justification::centred);
-    g.drawText ("Damping", startX + sliderSize + spacing, labelY, sliderSize, 20, juce::Justification::centred);
-    g.drawText ("Width", startX + (sliderSize + spacing) * 2, labelY, sliderSize, 20, juce::Justification::centred);
-    g.drawText ("Wet Level", startX + (sliderSize + spacing) * 3, labelY, sliderSize, 20, juce::Justification::centred);
+    // Calculate label Y position based on slider position
+    auto labelBounds = getLocalBounds();
+    labelBounds.removeFromTop(60);
+    labelBounds.removeFromBottom(35);
+    int sliderY = (labelBounds.getHeight() - sliderSize) / 2;
+    int labelY = 5 + sliderY + sliderSize; 
+    
+    // Draw rounded rectangles behind labels
+    g.setColour(juce::Colour(0xff0f3460).withAlpha(0.5f));
+    for (int i = 0; i < 4; ++i)
+    {
+        auto labelRect = juce::Rectangle<float>(
+            startX + (sliderSize + spacing) * i,
+            labelY,
+            sliderSize,
+            25);
+        g.fillRoundedRectangle(labelRect, 5.0f);
+    }
+    
+    // Draw label text
+    g.setColour(juce::Colour(0xffe94560));
+    g.drawText("ROOM SIZE", startX, labelY, sliderSize, 25, juce::Justification::centred);
+    g.drawText("DAMPING", startX + sliderSize + spacing, labelY, sliderSize, 25, juce::Justification::centred);
+    g.drawText("WIDTH", startX + (sliderSize + spacing) * 2, labelY, sliderSize, 25, juce::Justification::centred);
+    g.drawText("WET LEVEL", startX + (sliderSize + spacing) * 3, labelY, sliderSize, 25, juce::Justification::centred);
 }
 
 void AudioPluginAudioProcessorEditor::resized()
 {
     auto bounds = getLocalBounds();
-    bounds.removeFromTop(60); // Space for title
-    bounds.removeFromBottom(50); // Space for labels
+    bounds.removeFromTop(60); 
+    bounds.removeFromBottom(35); 
     
     // Layout sliders in a row
     int sliderSize = 100;
