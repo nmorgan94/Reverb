@@ -33,6 +33,17 @@ void AudioPluginAudioProcessorEditor::setupSlider(juce::Slider& slider, double i
     slider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
     slider.setRange(0.0, 1.0, 0.01);
     slider.setValue(initialValue);
+    
+    // Add listeners to track when slider is being interacted with
+    slider.onValueChange = [this]() { onSliderValueChange(); };
+    slider.onDragStart = [this, &slider]() { activeSlider = &slider; repaint(); };
+    slider.onDragEnd = [this]() { activeSlider = nullptr; repaint(); };
+}
+
+void AudioPluginAudioProcessorEditor::onSliderValueChange()
+{
+    if (activeSlider != nullptr)
+        repaint();
 }
 
 AudioPluginAudioProcessorEditor::~AudioPluginAudioProcessorEditor()
@@ -101,12 +112,32 @@ void AudioPluginAudioProcessorEditor::paint (juce::Graphics& g)
         g.fillRoundedRectangle(labelRect, 5.0f);
     }
     
-    // Draw label text
+    // Draw label text or value
     g.setColour(juce::Colour(0xffe94560));
-    g.drawText("ROOM SIZE", startX, labelY, sliderSize, 25, juce::Justification::centred);
-    g.drawText("DAMPING", startX + sliderSize + spacing, labelY, sliderSize, 25, juce::Justification::centred);
-    g.drawText("WIDTH", startX + (sliderSize + spacing) * 2, labelY, sliderSize, 25, juce::Justification::centred);
-    g.drawText("WET LEVEL", startX + (sliderSize + spacing) * 3, labelY, sliderSize, 25, juce::Justification::centred);
+    
+    // Room Size
+    if (activeSlider == &roomSizeSlider)
+        g.drawText(juce::String(roomSizeSlider.getValue(), 2), startX, labelY, sliderSize, 25, juce::Justification::centred);
+    else
+        g.drawText("ROOM SIZE", startX, labelY, sliderSize, 25, juce::Justification::centred);
+    
+    // Damping
+    if (activeSlider == &dampingSlider)
+        g.drawText(juce::String(dampingSlider.getValue(), 2), startX + sliderSize + spacing, labelY, sliderSize, 25, juce::Justification::centred);
+    else
+        g.drawText("DAMPING", startX + sliderSize + spacing, labelY, sliderSize, 25, juce::Justification::centred);
+    
+    // Width
+    if (activeSlider == &widthSlider)
+        g.drawText(juce::String(widthSlider.getValue(), 2), startX + (sliderSize + spacing) * 2, labelY, sliderSize, 25, juce::Justification::centred);
+    else
+        g.drawText("WIDTH", startX + (sliderSize + spacing) * 2, labelY, sliderSize, 25, juce::Justification::centred);
+    
+    // Wet Level
+    if (activeSlider == &wetLevelSlider)
+        g.drawText(juce::String(wetLevelSlider.getValue(), 2), startX + (sliderSize + spacing) * 3, labelY, sliderSize, 25, juce::Justification::centred);
+    else
+        g.drawText("WET LEVEL", startX + (sliderSize + spacing) * 3, labelY, sliderSize, 25, juce::Justification::centred);
 }
 
 void AudioPluginAudioProcessorEditor::resized()

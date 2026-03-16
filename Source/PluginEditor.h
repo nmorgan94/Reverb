@@ -20,9 +20,12 @@ public:
 
 private:
     void setupSlider(juce::Slider& slider, double initialValue);
+    void onSliderValueChange();
     
     bool isHoveringTitle = false;
     juce::Rectangle<int> titleBounds;
+    
+    juce::Slider* activeSlider = nullptr;
     
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
