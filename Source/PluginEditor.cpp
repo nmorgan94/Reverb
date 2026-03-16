@@ -10,11 +10,18 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAud
     // Set custom LookAndFeel globally for this editor
     setLookAndFeel(&customLookAndFeel);
     
-    // Setup all sliders with default values
+    // Setup all sliders
     setupSlider(roomSizeSlider, 0.5);
     setupSlider(dampingSlider, 0.5);
     setupSlider(widthSlider, 1.0);
     setupSlider(wetLevelSlider, 0.33);
+    
+    // Create attachments to connect sliders to parameters
+    auto& apvts = processorRef.getAPVTS();
+    roomSizeAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(apvts, "roomSize", roomSizeSlider);
+    dampingAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(apvts, "damping", dampingSlider);
+    widthAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(apvts, "width", widthSlider);
+    wetLevelAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(apvts, "wetLevel", wetLevelSlider);
 
     setSize(500, 300);
 }

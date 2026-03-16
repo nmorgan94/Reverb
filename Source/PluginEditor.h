@@ -24,6 +24,9 @@ private:
 
     juce::Slider roomSizeSlider, dampingSlider, widthSlider, wetLevelSlider;
     
+    // Slider attachments to connect UI to parameters
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> roomSizeAttachment, dampingAttachment, widthAttachment, wetLevelAttachment;
+    
     CustomLookAndFeel customLookAndFeel;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessorEditor)
