@@ -64,6 +64,15 @@ void AudioPluginAudioProcessorEditor::paint (juce::Graphics& g)
     g.setColour(juce::Colour(0xfff0f0f0));
     g.drawText("REVERB", titleArea, juce::Justification::centred);
     
+    // Show version label on hover
+    if (isHoveringTitle)
+    {
+        auto versionArea = titleArea.removeFromBottom(18);
+        g.setFont(juce::FontOptions(11.0f));
+        g.setColour(juce::Colour(0xffe94560).withAlpha(0.9f));
+        g.drawText("v" + juce::String(JucePlugin_VersionString), versionArea, juce::Justification::centred);
+    }
+    
     
     // Draw labels
     g.setFont(juce::FontOptions(13.0f).withStyle("Bold"));
@@ -102,9 +111,12 @@ void AudioPluginAudioProcessorEditor::paint (juce::Graphics& g)
 
 void AudioPluginAudioProcessorEditor::resized()
 {
+    // Store title bounds for hover detection
+    titleBounds = getLocalBounds().removeFromTop(60);
+    
     auto bounds = getLocalBounds();
-    bounds.removeFromTop(60); 
-    bounds.removeFromBottom(35); 
+    bounds.removeFromTop(60);
+    bounds.removeFromBottom(35);
     
     // Layout sliders in a row
     int sliderSize = 100;
@@ -117,4 +129,22 @@ void AudioPluginAudioProcessorEditor::resized()
     dampingSlider.setBounds(startX + sliderSize + spacing, startY, sliderSize, sliderSize);
     widthSlider.setBounds(startX + (sliderSize + spacing) * 2, startY, sliderSize, sliderSize);
     wetLevelSlider.setBounds(startX + (sliderSize + spacing) * 3, startY, sliderSize, sliderSize);
+}
+
+void AudioPluginAudioProcessorEditor::mouseMove(const juce::MouseEvent& event)
+{
+    bool wasHovering = isHoveringTitle;
+    isHoveringTitle = titleBounds.contains(event.getPosition());
+    
+    if (wasHovering != isHoveringTitle)
+        repaint(titleBounds);
+}
+
+void AudioPluginAudioProcessorEditor::mouseExit(const juce::MouseEvent&)
+{
+    if (isHoveringTitle)
+    {
+        isHoveringTitle = false;
+        repaint(titleBounds);
+    }
 }

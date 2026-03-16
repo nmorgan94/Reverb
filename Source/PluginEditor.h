@@ -14,9 +14,15 @@ public:
     //==============================================================================
     void paint (juce::Graphics&) override;
     void resized() override;
+    
+    void mouseMove(const juce::MouseEvent& event) override;
+    void mouseExit(const juce::MouseEvent& event) override;
 
 private:
     void setupSlider(juce::Slider& slider, double initialValue);
+    
+    bool isHoveringTitle = false;
+    juce::Rectangle<int> titleBounds;
     
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
