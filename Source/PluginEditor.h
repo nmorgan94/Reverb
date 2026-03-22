@@ -2,6 +2,7 @@
 
 #include "PluginProcessor.h"
 #include "ui/CustomLookAndFeel.h"
+#include "ui/SpectrumAnalyzer.h"
 // #include <BinaryData.h> add BinaryData here
 
 //==============================================================================
@@ -37,6 +38,8 @@ private:
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> roomSizeAttachment, dampingAttachment, widthAttachment, wetLevelAttachment;
     
     CustomLookAndFeel customLookAndFeel;
+    
+    SpectrumAnalyzer spectrumAnalyzer;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessorEditor)
 };

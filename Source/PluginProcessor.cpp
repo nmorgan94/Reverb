@@ -137,6 +137,13 @@ void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
     
     reverb.prepare(spec);
     updateReverbParameters();
+    // Initialize FIFO buffer for spectrum analyzer
+    // Mono buffer, 1 second capacity at 48kHz
+    audioFifo.setSize(1, 48000);
+    audioFifo.clear();
+    abstractFifo.reset();
+    hasNewData.store(false, std::memory_order_release);
+    
 }
 
 void AudioPluginAudioProcessor::releaseResources()
@@ -188,6 +195,34 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     juce::dsp::AudioBlock<float> block (buffer);
     juce::dsp::ProcessContextReplacing<float> context (block);
     reverb.process(context);
+
+    const int numSamples = buffer.getNumSamples();
+    
+    // Get write positions from the lock-free FIFO
+    int start1, size1, start2, size2;
+    abstractFifo.prepareToWrite(numSamples, start1, size1, start2, size2);
+    
+    // Helper lambda to write a region (mix stereo to mono)
+    auto writeRegion = [&](int fifoStart, int regionSize, int bufferOffset)
+    {
+        for (int i = 0; i < regionSize; ++i)
+        {
+            float sample = 0.0f;
+            for (int channel = 0; channel < totalNumOutputChannels; ++channel)
+                sample += buffer.getSample(channel, bufferOffset + i);
+            sample /= static_cast<float>(totalNumOutputChannels);
+            
+            audioFifo.setSample(0, fifoStart + i, sample);
+        }
+    };
+    
+    // Write both regions (second only if wraparound occurred)
+    if (size1 > 0) writeRegion(start1, size1, 0);
+    if (size2 > 0) writeRegion(start2, size2, size1);
+    
+    // Mark write complete and signal UI thread
+    abstractFifo.finishedWrite(size1 + size2);
+    hasNewData.store(true, std::memory_order_release);
 }
 
 //==============================================================================

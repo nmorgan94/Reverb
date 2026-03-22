@@ -2,6 +2,7 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_dsp/juce_dsp.h>
+#include <atomic>
 
 //==============================================================================
 class AudioPluginAudioProcessor final : public juce::AudioProcessor
@@ -47,6 +48,10 @@ public:
     juce::AudioProcessorValueTreeState& getAPVTS() { return apvts; }
     
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
+    
+    juce::AudioBuffer<float>& getAudioFifo() { return audioFifo; }
+    juce::AbstractFifo& getAbstractFifo() { return abstractFifo; }
+    std::atomic<bool>& getHasNewData() { return hasNewData; }
 
 private:
     //==============================================================================
@@ -56,6 +61,10 @@ private:
     juce::dsp::Reverb::Parameters reverbParams;
     
     void updateReverbParameters();
+    
+    juce::AudioBuffer<float> audioFifo;      // Circular buffer for audio samples
+    juce::AbstractFifo abstractFifo{48000};  // Lock-free FIFO (1 sec at 48kHz)
+    std::atomic<bool> hasNewData{false};     // Signals UI thread that data is available
     
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessor)
