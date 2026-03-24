@@ -64,25 +64,19 @@ void AudioPluginAudioProcessorEditor::paint (juce::Graphics& g)
         false);
     g.setGradientFill(gradient);
     g.fillAll();
-    
 
-    // Shadow
-    g.setColour(juce::Colours::black.withAlpha(0.3f));
-    g.setFont(juce::FontOptions(28.0f).withStyle("Bold"));
-    g.drawText("REVERB", titleBounds.translated(2, 2), juce::Justification::centred);
-    
-    // Main title
     g.setColour(juce::Colour(0xfff0f0f0));
-    g.drawText("REVERB", titleBounds, juce::Justification::centred);
+    juce::AttributedString titleText;
+    titleText.setJustification(juce::Justification::centred);
+    titleText.append("SampleRealm: ", CustomLookAndFeel::orbitronBold().withPointHeight(28.0f), juce::Colour(0xfff0f0f0));
+    titleText.append("REVERB", CustomLookAndFeel::orbitronRegular().withPointHeight(28.0f), juce::Colour(0xfff0f0f0));
+    titleText.draw(g, titleBounds.toFloat());
     
-    // Show version label on hover
-    if (isHoveringTitle)
-    {
-        auto versionArea = titleBounds.withTrimmedTop(titleBounds.getHeight() - 18);
-        g.setFont(juce::FontOptions(11.0f));
-        g.setColour(juce::Colour(0xffe94560).withAlpha(0.9f));
-        g.drawText("v" + juce::String(JucePlugin_VersionString), versionArea, juce::Justification::centred);
-    }
+    // Draw version number small in bottom right of title area
+    g.setFont(CustomLookAndFeel::orbitronRegular().withPointHeight(9.0f));
+    g.setColour(juce::Colour(0xffe94560).withAlpha(0.8f));
+    auto versionArea = juce::Rectangle<int>(titleBounds.getRight() - 50, titleBounds.getBottom() - 12, 50, 12);
+    g.drawText("v" + juce::String(JucePlugin_VersionString), versionArea, juce::Justification::centredRight);
     
     
     // Draw labels below each slider
@@ -141,22 +135,4 @@ void AudioPluginAudioProcessorEditor::resized()
     dampingSlider.setBounds(startX + sliderSize + spacing, 100 + startY, sliderSize, sliderSize);
     widthSlider.setBounds(startX + (sliderSize + spacing) * 2, 100 + startY, sliderSize, sliderSize);
     wetLevelSlider.setBounds(startX + (sliderSize + spacing) * 3, 100 + startY, sliderSize, sliderSize);
-}
-
-void AudioPluginAudioProcessorEditor::mouseMove(const juce::MouseEvent& event)
-{
-    bool wasHovering = isHoveringTitle;
-    isHoveringTitle = titleBounds.contains(event.getPosition());
-    
-    if (wasHovering != isHoveringTitle)
-        repaint(titleBounds);
-}
-
-void AudioPluginAudioProcessorEditor::mouseExit(const juce::MouseEvent&)
-{
-    if (isHoveringTitle)
-    {
-        isHoveringTitle = false;
-        repaint(titleBounds);
-    }
 }

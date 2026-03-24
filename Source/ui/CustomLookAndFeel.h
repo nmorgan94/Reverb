@@ -1,6 +1,7 @@
 #pragma once
 
 #include <juce_gui_basics/juce_gui_basics.h>
+#include "BinaryData.h"
 
 class CustomLookAndFeel : public juce::LookAndFeel_V4
 {
@@ -87,5 +88,21 @@ public:
                      bounds.getCentreY() - centerCircleSize,
                      centerCircleSize * 2.0f,
                      centerCircleSize * 2.0f);
+    }
+
+    [[nodiscard]] static juce::FontOptions orbitronRegular()
+    {
+        static auto typeface = juce::Typeface::createSystemTypefaceFor(
+            BinaryData::OrbitronRegular_ttf,
+            BinaryData::OrbitronRegular_ttfSize);
+        return juce::FontOptions(typeface);
+    }
+    
+    [[nodiscard]] static juce::FontOptions orbitronBold()
+    {
+        static auto typeface = juce::Typeface::createSystemTypefaceFor(
+            BinaryData::OrbitronBold_ttf,
+            BinaryData::OrbitronBold_ttfSize);
+        return juce::FontOptions(typeface);
     }
 };

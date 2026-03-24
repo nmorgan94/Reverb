@@ -3,7 +3,7 @@
 #include "PluginProcessor.h"
 #include "ui/CustomLookAndFeel.h"
 #include "ui/SpectrumAnalyzer.h"
-// #include <BinaryData.h> add BinaryData here
+#include <BinaryData.h>
 
 //==============================================================================
 class AudioPluginAudioProcessorEditor final : public juce::AudioProcessorEditor
@@ -15,15 +15,11 @@ public:
     //==============================================================================
     void paint (juce::Graphics&) override;
     void resized() override;
-    
-    void mouseMove(const juce::MouseEvent& event) override;
-    void mouseExit(const juce::MouseEvent& event) override;
 
 private:
     void setupSlider(juce::Slider& slider, double initialValue);
     void onSliderValueChange();
     
-    bool isHoveringTitle = false;
     juce::Rectangle<int> titleBounds;
     
     juce::Slider* activeSlider = nullptr;
