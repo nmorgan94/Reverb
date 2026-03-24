@@ -91,6 +91,16 @@ void SpectrumAnalyzer::drawFrequencyMarkers(juce::Graphics& g, float width, floa
 //==============================================================================
 void SpectrumAnalyzer::timerCallback()
 {
+    // Check if spectrum analyzer is bypassed
+    bool spectrumBypassed = static_cast<bool>(processor.getAPVTS().getRawParameterValue("spectrumBypass")->load());
+    if (spectrumBypassed)
+    {
+        // Clear the display when bypassed
+        std::fill(scopeData.begin(), scopeData.end(), 0.0f);
+        repaint();
+        return;
+    }
+    
     // Check if processor has new audio data available
     if (processor.getHasNewData().load(std::memory_order_acquire))
     {

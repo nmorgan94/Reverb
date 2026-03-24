@@ -47,6 +47,11 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
         0.33f));
     
+    layout.add(std::make_unique<juce::AudioParameterBool>(
+        "spectrumBypass",
+        "Spectrum Bypass",
+        false));
+    
     return layout;
 }
 
@@ -196,33 +201,40 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     juce::dsp::ProcessContextReplacing<float> context (block);
     reverb.process(context);
 
-    const int numSamples = buffer.getNumSamples();
+    // Check if spectrum analyzer is bypassed
+    bool spectrumBypassed = static_cast<bool>(apvts.getRawParameterValue("spectrumBypass")->load());
     
-    // Get write positions from the lock-free FIFO
-    int start1, size1, start2, size2;
-    abstractFifo.prepareToWrite(numSamples, start1, size1, start2, size2);
-    
-    // Helper lambda to write a region (mix stereo to mono)
-    auto writeRegion = [&](int fifoStart, int regionSize, int bufferOffset)
+    // Only process spectrum data if not bypassed
+    if (!spectrumBypassed)
     {
-        for (int i = 0; i < regionSize; ++i)
+        const int numSamples = buffer.getNumSamples();
+        
+        // Get write positions from the lock-free FIFO
+        int start1, size1, start2, size2;
+        abstractFifo.prepareToWrite(numSamples, start1, size1, start2, size2);
+        
+        // Helper lambda to write a region (mix stereo to mono)
+        auto writeRegion = [&](int fifoStart, int regionSize, int bufferOffset)
         {
-            float sample = 0.0f;
-            for (int channel = 0; channel < totalNumOutputChannels; ++channel)
-                sample += buffer.getSample(channel, bufferOffset + i);
-            sample /= static_cast<float>(totalNumOutputChannels);
-            
-            audioFifo.setSample(0, fifoStart + i, sample);
-        }
-    };
-    
-    // Write both regions (second only if wraparound occurred)
-    if (size1 > 0) writeRegion(start1, size1, 0);
-    if (size2 > 0) writeRegion(start2, size2, size1);
-    
-    // Mark write complete and signal UI thread
-    abstractFifo.finishedWrite(size1 + size2);
-    hasNewData.store(true, std::memory_order_release);
+            for (int i = 0; i < regionSize; ++i)
+            {
+                float sample = 0.0f;
+                for (int channel = 0; channel < totalNumOutputChannels; ++channel)
+                    sample += buffer.getSample(channel, bufferOffset + i);
+                sample /= static_cast<float>(totalNumOutputChannels);
+                
+                audioFifo.setSample(0, fifoStart + i, sample);
+            }
+        };
+        
+        // Write both regions (second only if wraparound occurred)
+        if (size1 > 0) writeRegion(start1, size1, 0);
+        if (size2 > 0) writeRegion(start2, size2, size1);
+        
+        // Mark write complete and signal UI thread
+        abstractFifo.finishedWrite(size1 + size2);
+        hasNewData.store(true, std::memory_order_release);
+    }
 }
 
 //==============================================================================
