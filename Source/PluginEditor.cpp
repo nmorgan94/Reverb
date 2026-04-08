@@ -14,7 +14,9 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAud
     setupSlider(roomSizeSlider, 0.5);
     setupSlider(dampingSlider, 0.5);
     setupSlider(widthSlider, 1.0);
-    setupSlider(wetLevelSlider, 0.33);
+    setupSlider(mixSlider, 0.33);
+    setupSlider(sendGainSlider, 1.0);
+    setupSlider(highpassFreqSlider, 100.0);
     
     addAndMakeVisible(spectrumAnalyzer);
     
@@ -23,9 +25,11 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAud
     roomSizeAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(apvts, "roomSize", roomSizeSlider);
     dampingAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(apvts, "damping", dampingSlider);
     widthAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(apvts, "width", widthSlider);
-    wetLevelAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(apvts, "wetLevel", wetLevelSlider);
+    mixAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(apvts, "mix", mixSlider);
+    sendGainAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(apvts, "sendGain", sendGainSlider);
+    highpassFreqAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(apvts, "highpassFreq", highpassFreqSlider);
 
-    setSize(500, 250);
+    setSize(700, 250);
 }
 
 void AudioPluginAudioProcessorEditor::setupSlider(juce::Slider& slider, double initialValue)
@@ -108,7 +112,9 @@ void AudioPluginAudioProcessorEditor::paint (juce::Graphics& g)
     drawLabel(roomSizeSlider, "ROOM SIZE", juce::String(roomSizeSlider.getValue(), 2));
     drawLabel(dampingSlider, "DAMPING", juce::String(dampingSlider.getValue(), 2));
     drawLabel(widthSlider, "WIDTH", juce::String(widthSlider.getValue(), 2));
-    drawLabel(wetLevelSlider, "WET LEVEL", juce::String(wetLevelSlider.getValue(), 2));
+    drawLabel(mixSlider, "MIX", juce::String(mixSlider.getValue(), 2));
+    drawLabel(sendGainSlider, "SEND GAIN", juce::String(sendGainSlider.getValue(), 2));
+    drawLabel(highpassFreqSlider, "HP FREQ", juce::String(highpassFreqSlider.getValue(), 0) + " Hz");
 }
 
 void AudioPluginAudioProcessorEditor::resized()
@@ -126,13 +132,15 @@ void AudioPluginAudioProcessorEditor::resized()
     auto sliderArea = juce::Rectangle<int>(0, 100, bounds.getWidth(), bounds.getHeight() - 100);
     
     // Layout sliders in a row within slider area
-    int spacing = 20;
-    int totalWidth = (sliderSize * 4) + (spacing * 3);
+    int spacing = 15;
+    int totalWidth = (sliderSize * 6) + (spacing * 5);
     int startX = (sliderArea.getWidth() - totalWidth) / 2;
     int startY = (sliderArea.getHeight() - sliderTotalHeight) / 2;
     
-    roomSizeSlider.setBounds(startX, 100 + startY, sliderSize, sliderSize);
-    dampingSlider.setBounds(startX + sliderSize + spacing, 100 + startY, sliderSize, sliderSize);
-    widthSlider.setBounds(startX + (sliderSize + spacing) * 2, 100 + startY, sliderSize, sliderSize);
-    wetLevelSlider.setBounds(startX + (sliderSize + spacing) * 3, 100 + startY, sliderSize, sliderSize);
+    highpassFreqSlider.setBounds(startX, 100 + startY, sliderSize, sliderSize);
+    sendGainSlider.setBounds(startX + (sliderSize + spacing), 100 + startY, sliderSize, sliderSize);
+    roomSizeSlider.setBounds(startX + (sliderSize + spacing) * 2, 100 + startY, sliderSize, sliderSize);
+    dampingSlider.setBounds(startX + (sliderSize + spacing) * 3, 100 + startY, sliderSize, sliderSize);
+    widthSlider.setBounds(startX + (sliderSize + spacing) * 4, 100 + startY, sliderSize, sliderSize);
+    mixSlider.setBounds(startX + (sliderSize + spacing) * 5, 100 + startY, sliderSize, sliderSize);
 }

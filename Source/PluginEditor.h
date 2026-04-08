@@ -28,10 +28,10 @@ private:
     // access the processor object that created it.
     AudioPluginAudioProcessor& processorRef;
 
-    juce::Slider roomSizeSlider, dampingSlider, widthSlider, wetLevelSlider;
+    juce::Slider roomSizeSlider, dampingSlider, widthSlider, mixSlider, sendGainSlider, highpassFreqSlider;
     
     // Slider attachments to connect UI to parameters
-    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> roomSizeAttachment, dampingAttachment, widthAttachment, wetLevelAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> roomSizeAttachment, dampingAttachment, widthAttachment, mixAttachment, sendGainAttachment, highpassFreqAttachment;
     
     CustomLookAndFeel customLookAndFeel;
     

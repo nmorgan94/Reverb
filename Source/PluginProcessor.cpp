@@ -26,26 +26,38 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
     layout.add(std::make_unique<juce::AudioParameterFloat>(
         "roomSize",
         "Room Size",
-        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
+        juce::NormalisableRange<float>(0.0f, 1.0f, 0.80f),
         0.5f));
     
     layout.add(std::make_unique<juce::AudioParameterFloat>(
         "damping",
         "Damping",
-        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
+        juce::NormalisableRange<float>(0.0f, 1.0f, 0.80f),
         0.5f));
     
     layout.add(std::make_unique<juce::AudioParameterFloat>(
         "width",
         "Width",
-        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
+        juce::NormalisableRange<float>(0.0f, 1.0f, 0.50f),
         1.0f));
     
     layout.add(std::make_unique<juce::AudioParameterFloat>(
-        "wetLevel",
-        "Wet Level",
+        "mix",
+        "Mix",
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
-        0.33f));
+        0.50f));
+    
+    layout.add(std::make_unique<juce::AudioParameterFloat>(
+        "sendGain",
+        "Send Gain",
+        juce::NormalisableRange<float>(0.0f, 2.0f, 1.00f),
+        1.0f));
+    
+    layout.add(std::make_unique<juce::AudioParameterFloat>(
+        "highpassFreq",
+        "Highpass Freq",
+        juce::NormalisableRange<float>(20.0f, 20000.0f, 1.0f, 0.20f),
+        1000.0f));
     
     layout.add(std::make_unique<juce::AudioParameterBool>(
         "spectrumBypass",
@@ -60,11 +72,24 @@ void AudioPluginAudioProcessor::updateReverbParameters()
     reverbParams.roomSize = apvts.getRawParameterValue("roomSize")->load();
     reverbParams.damping = apvts.getRawParameterValue("damping")->load();
     reverbParams.width = apvts.getRawParameterValue("width")->load();
-    reverbParams.wetLevel = apvts.getRawParameterValue("wetLevel")->load();
-    reverbParams.dryLevel = 1.0f - reverbParams.wetLevel;
+    // Set reverb to 100% wet as we handle dry/wet mixing manually
+    reverbParams.wetLevel = 1.0f;
+    reverbParams.dryLevel = 0.0f;
     reverbParams.freezeMode = 0.0f;
     
     reverb.setParameters(reverbParams);
+}
+
+void AudioPluginAudioProcessor::updateHighpassFilter()
+{
+    float freq = apvts.getRawParameterValue("highpassFreq")->load();
+    auto sampleRate = getSampleRate();
+    
+    if (sampleRate > 0.0)
+    {
+        *highpassFilter1.state = *CoefficientType::makeHighPass(sampleRate, freq);
+        *highpassFilter2.state = *CoefficientType::makeHighPass(sampleRate, freq);
+    }
 }
 
 //==============================================================================
@@ -141,7 +166,12 @@ void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
     spec.numChannels = static_cast<juce::uint32>(getTotalNumOutputChannels());
     
     reverb.prepare(spec);
+    highpassFilter1.prepare(spec);
+    highpassFilter2.prepare(spec);
+    
     updateReverbParameters();
+    updateHighpassFilter();
+    
     // Initialize FIFO buffer for spectrum analyzer
     // Mono buffer, 1 second capacity at 48kHz
     audioFifo.setSize(1, 48000);
@@ -193,13 +223,43 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
-    // Update reverb parameters from APVTS
+    // Update parameters from APVTS
     updateReverbParameters();
+    updateHighpassFilter();
     
-    // Process audio through reverb
-    juce::dsp::AudioBlock<float> block (buffer);
-    juce::dsp::ProcessContextReplacing<float> context (block);
-    reverb.process(context);
+    // Get parameter values
+    float mix = apvts.getRawParameterValue("mix")->load();
+    float sendGain = apvts.getRawParameterValue("sendGain")->load();
+    float dryLevel = 1.0f - mix;
+    
+    // Create a copy of the input for the wet signal path
+    juce::AudioBuffer<float> wetBuffer;
+    wetBuffer.makeCopyOf(buffer);
+    
+    // Process wet signal: highpass filter (24 dB/oct) -> gain -> reverb
+    juce::dsp::AudioBlock<float> wetBlock(wetBuffer);
+    juce::dsp::ProcessContextReplacing<float> wetContext(wetBlock);
+    
+    // Apply 24 dB/oct highpass filter (bypass at 20 Hz to save CPU)
+    float hpFreq = apvts.getRawParameterValue("highpassFreq")->load();
+    if (hpFreq > 20.0f)
+    {
+        highpassFilter1.process(wetContext);
+        highpassFilter2.process(wetContext);
+    }
+    
+    // Apply send gain
+    wetBuffer.applyGain(sendGain);
+    
+    // Apply reverb to wet signal
+    reverb.process(wetContext);
+    
+    // Mix dry and wet signals
+    for (int channel = 0; channel < totalNumOutputChannels; ++channel)
+    {
+        buffer.applyGain(channel, 0, buffer.getNumSamples(), dryLevel);
+        buffer.addFrom(channel, 0, wetBuffer, channel, 0, buffer.getNumSamples(), mix);
+    }
 
     // Check if spectrum analyzer is bypassed
     bool spectrumBypassed = static_cast<bool>(apvts.getRawParameterValue("spectrumBypass")->load());

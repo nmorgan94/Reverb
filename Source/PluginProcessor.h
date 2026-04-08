@@ -60,7 +60,14 @@ private:
     juce::dsp::Reverb reverb;
     juce::dsp::Reverb::Parameters reverbParams;
     
+    // Highpass filter for reverb send - 24 dB/oct (two cascaded 12 dB/oct stages)
+    using FilterType = juce::dsp::IIR::Filter<float>;
+    using CoefficientType = juce::dsp::IIR::Coefficients<float>;
+    juce::dsp::ProcessorDuplicator<FilterType, CoefficientType> highpassFilter1;
+    juce::dsp::ProcessorDuplicator<FilterType, CoefficientType> highpassFilter2;
+    
     void updateReverbParameters();
+    void updateHighpassFilter();
     
     juce::AudioBuffer<float> audioFifo;      // Circular buffer for audio samples
     juce::AbstractFifo abstractFifo{48000};  // Lock-free FIFO (1 sec at 48kHz)
