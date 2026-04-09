@@ -26,38 +26,32 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
     layout.add(std::make_unique<juce::AudioParameterFloat>(
         "roomSize",
         "Room Size",
-        juce::NormalisableRange<float>(0.0f, 1.0f, 0.80f),
-        0.5f));
+        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f), 0.80f));
     
     layout.add(std::make_unique<juce::AudioParameterFloat>(
         "damping",
         "Damping",
-        juce::NormalisableRange<float>(0.0f, 1.0f, 0.80f),
-        0.5f));
+        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f), 0.80f));
     
     layout.add(std::make_unique<juce::AudioParameterFloat>(
         "width",
         "Width",
-        juce::NormalisableRange<float>(0.0f, 1.0f, 0.50f),
-        1.0f));
+        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f), 0.50f));
     
     layout.add(std::make_unique<juce::AudioParameterFloat>(
         "mix",
         "Mix",
-        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
-        0.50f));
+        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f), 0.50f));
     
     layout.add(std::make_unique<juce::AudioParameterFloat>(
         "sendGain",
         "Send Gain",
-        juce::NormalisableRange<float>(0.0f, 2.0f, 1.00f),
-        1.0f));
+        juce::NormalisableRange<float>(0.0f, 2.0f, 0.01f),1.0f));
     
     layout.add(std::make_unique<juce::AudioParameterFloat>(
         "highpassFreq",
         "Highpass Freq",
-        juce::NormalisableRange<float>(20.0f, 20000.0f, 1.0f, 0.20f),
-        1000.0f));
+        juce::NormalisableRange<float>(20.0f, 20000.0f, 1.0f, 0.20f),1000.0f));
     
     layout.add(std::make_unique<juce::AudioParameterBool>(
         "spectrumBypass",
@@ -172,6 +166,10 @@ void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
     updateReverbParameters();
     updateHighpassFilter();
     
+    // Initialize pre-allocated wet buffer for reverb processing
+    wetBuffer.setSize(static_cast<int>(spec.numChannels), static_cast<int>(spec.maximumBlockSize));
+    wetBuffer.clear();
+    
     // Initialize FIFO buffer for spectrum analyzer
     // Mono buffer, 1 second capacity at 48kHz
     audioFifo.setSize(1, 48000);
@@ -232,12 +230,15 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     float sendGain = apvts.getRawParameterValue("sendGain")->load();
     float dryLevel = 1.0f - mix;
     
-    // Create a copy of the input for the wet signal path
-    juce::AudioBuffer<float> wetBuffer;
-    wetBuffer.makeCopyOf(buffer);
+    // Copy input to pre-allocated wet buffer
+    auto numSamples = buffer.getNumSamples();
+    for (int channel = 0; channel < totalNumOutputChannels; ++channel)
+        wetBuffer.copyFrom(channel, 0, buffer, channel, 0, numSamples);
     
     // Process wet signal: highpass filter (24 dB/oct) -> gain -> reverb
-    juce::dsp::AudioBlock<float> wetBlock(wetBuffer);
+    juce::dsp::AudioBlock<float> wetBlock(wetBuffer.getArrayOfWritePointers(),
+                                          static_cast<size_t>(totalNumOutputChannels),
+                                          0, static_cast<size_t>(numSamples));
     juce::dsp::ProcessContextReplacing<float> wetContext(wetBlock);
     
     // Apply 24 dB/oct highpass filter (bypass at 20 Hz to save CPU)
@@ -267,8 +268,6 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     // Only process spectrum data if not bypassed
     if (!spectrumBypassed)
     {
-        const int numSamples = buffer.getNumSamples();
-        
         // Get write positions from the lock-free FIFO
         int start1, size1, start2, size2;
         abstractFifo.prepareToWrite(numSamples, start1, size1, start2, size2);

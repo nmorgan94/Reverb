@@ -64,6 +64,9 @@ private:
     using FilterType = juce::dsp::IIR::Filter<float>;
     using CoefficientType = juce::dsp::IIR::Coefficients<float>;
     juce::dsp::ProcessorDuplicator<FilterType, CoefficientType> highpassFilter1;
+    
+    // Pre-allocated buffer for wet signal processing (avoids per-block allocation)
+    juce::AudioBuffer<float> wetBuffer;
     juce::dsp::ProcessorDuplicator<FilterType, CoefficientType> highpassFilter2;
     
     void updateReverbParameters();
