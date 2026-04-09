@@ -52,6 +52,23 @@ void AudioPluginAudioProcessorEditor::onSliderValueChange()
         repaint();
 }
 
+void AudioPluginAudioProcessorEditor::drawSeparatorLine(juce::Graphics& g,
+                                                        const juce::Slider& leftSlider,
+                                                        const juce::Slider& rightSlider)
+{
+    g.setColour(juce::Colour(0xffe94560)); // Red color
+    
+    auto leftBounds = leftSlider.getBounds();
+    auto rightBounds = rightSlider.getBounds();
+    
+    // Calculate line position (centered between sliders)
+    float lineX = (leftBounds.getRight() + rightBounds.getX()) / 2.0f;
+    float lineY1 = leftBounds.getY();
+    float lineY2 = leftBounds.getBottom();
+    
+    g.drawLine(lineX, lineY1, lineX, lineY2, 1.0f);
+}
+
 AudioPluginAudioProcessorEditor::~AudioPluginAudioProcessorEditor()
 {
     // Remove global LookAndFeel
@@ -115,6 +132,9 @@ void AudioPluginAudioProcessorEditor::paint (juce::Graphics& g)
     drawLabel(mixSlider, "MIX", juce::String(mixSlider.getValue(), 2));
     drawLabel(sendGainSlider, "SEND GAIN", juce::String(sendGainSlider.getValue(), 2));
     drawLabel(highpassFreqSlider, "HP FREQ", juce::String(highpassFreqSlider.getValue(), 0) + " Hz");
+    
+    drawSeparatorLine(g, sendGainSlider, roomSizeSlider);  // Pre-reverb | Reverb
+    drawSeparatorLine(g, widthSlider, mixSlider);          // Reverb | Mix
 }
 
 void AudioPluginAudioProcessorEditor::resized()

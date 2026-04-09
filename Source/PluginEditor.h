@@ -19,6 +19,7 @@ public:
 private:
     void setupSlider(juce::Slider& slider, double initialValue);
     void onSliderValueChange();
+    void drawSeparatorLine(juce::Graphics& g, const juce::Slider& leftSlider, const juce::Slider& rightSlider);
     
     juce::Rectangle<int> titleBounds;
     
