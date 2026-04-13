@@ -6,11 +6,15 @@
 class CustomLookAndFeel : public juce::LookAndFeel_V4
 {
 public:
+    static constexpr juce::uint32 primaryRed = 0xffe94560;
+    static constexpr juce::uint32 lightPink = 0xffff6b9d;
+    static constexpr juce::uint32 darkBlue = 0xff0f3460;
+    
     CustomLookAndFeel()
     {
-        setColour(juce::Slider::thumbColourId, juce::Colour(0xffe94560));
-        setColour(juce::Slider::rotarySliderFillColourId, juce::Colour(0xffe94560));
-        setColour(juce::Slider::rotarySliderOutlineColourId, juce::Colour(0xff0f3460).withAlpha(0.6f));
+        setColour(juce::Slider::thumbColourId, juce::Colour(primaryRed));
+        setColour(juce::Slider::rotarySliderFillColourId, juce::Colour(primaryRed));
+        setColour(juce::Slider::rotarySliderOutlineColourId, juce::Colour(darkBlue).withAlpha(0.6f));
     }
 
     void drawRotarySlider(juce::Graphics& g, int x, int y, int width, int height,
@@ -24,7 +28,7 @@ public:
         auto arcRadius = radius - lineW * 0.5f;
 
         // Draw outer glow effect
-        g.setColour(juce::Colour(0xff0f3460).withAlpha(0.3f));
+        g.setColour(juce::Colour(darkBlue).withAlpha(0.3f));
         g.fillEllipse(bounds.reduced(-5));
 
         // Draw full range outline (min to max path)
@@ -56,9 +60,9 @@ public:
 
             // Gradient for the value arc
             juce::ColourGradient gradient(
-                juce::Colour(0xffe94560),
+                juce::Colour(primaryRed),
                 bounds.getCentreX(), bounds.getY(),
-                juce::Colour(0xffff6b9d),
+                juce::Colour(lightPink),
                 bounds.getCentreX(), bounds.getBottom(),
                 false);
             g.setGradientFill(gradient);
@@ -67,20 +71,22 @@ public:
 
         // Draw pointer/thumb
         juce::Path pointer;
-        auto pointerLength = radius * 0.4f;
+        auto pointerLength = radius * 0.55f;
         auto pointerThickness = 4.0f;
-        pointer.addRectangle(-pointerThickness * 0.5f, -radius + lineW, pointerThickness, pointerLength);
+        auto cornerRadius = pointerThickness * 0.5f;
+        auto pointerOffset = radius * 0.2f;
+        pointer.addRoundedRectangle(-pointerThickness * 0.5f, -radius + lineW + pointerOffset, pointerThickness, pointerLength, cornerRadius);
         pointer.applyTransform(juce::AffineTransform::rotation(toAngle).translated(bounds.getCentreX(), bounds.getCentreY()));
 
         g.setColour(slider.findColour(juce::Slider::thumbColourId));
         g.fillPath(pointer);
 
         // Draw center circle with gradient
-        auto centerCircleSize = radius * 0.25f;
+        auto centerCircleSize = radius * 0.18f;
         juce::ColourGradient centerGradient(
-            juce::Colour(0xff0f3460),
+            juce::Colour(primaryRed),
             bounds.getCentreX(), bounds.getCentreY() - centerCircleSize,
-            juce::Colour(0xff16213e),
+            juce::Colour(lightPink),
             bounds.getCentreX(), bounds.getCentreY() + centerCircleSize,
             false);
         g.setGradientFill(centerGradient);

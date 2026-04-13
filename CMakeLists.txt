@@ -53,7 +53,7 @@ juce_add_plugin(${PROJECT_NAME}
         PLUGIN_CODE
           Rvrb
         VERSION 
-          0.0.0
+          0.0.1
         FORMATS
           VST3
           AU
